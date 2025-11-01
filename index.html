@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compte à Rebours Personnalisé</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+     <!-- Section du formulaire -->
+    <section id="form-section">
+        <h1>Définis ta date et l'objectif du compte à rebours</h1>
+        <form id="countdown-form">
+            <input type="datetime-local" id="target-date" required>
+            <input type="text" id="countdown-purpose" placeholder="Objectif du compte à rebours (ex. Anniversaire)" required>
+            <button type="submit">Lancer le compte à rebours</button>
+        </form>
+    </section>
+
+    <!-- Section du compte à rebours (cachée au départ) -->
+    <section id="countdown-section">
+        <h2 id="countdown-purpose-display"></h2>
+        <div id="countdown">
+            <div class="time-unit">
+                <span id="days" class="time-value">00</span>
+                <span class="time-label">Jours</span>
+            </div>
+            <div class="time-unit">
+                <span id="hours" class="time-value">00</span>
+                <span class="time-label">Heures</span>
+            </div>
+            <div class="time-unit">
+                <span id="minutes" class="time-value">00</span>
+                <span class="time-label">Minutes</span>
+            </div>
+            <div class="time-unit">
+                <span id="seconds" class="time-value">00</span>
+                <span class="time-label">Secondes</span>
+            </div>
+        </div>
+        <p id="quote">"Chaque seconde compte. Profite du temps avant qu'il ne s'envole."</p>
+    </section>
+
+    <!-- Canvas pour l'animation de fond -->
+    <canvas id="background-animation"></canvas>
+
+    <!-- JavaScript intégré -->
+    <script>
+        // === VARIABLES GLOBALES ===
+        let countdownInterval;
+        let targetDate;
+        let canvas, ctx;
+        let particles = [];
+
+        // === INITIALISATION ===
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser l'animation de fond
+            initBackgroundAnimation();
+            
+            // Gérer la soumission du formulaire
+            document.getElementById('countdown-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                startCountdown();
+            });
+        });
+
+        // === FONCTION POUR DÉMARRER LE COMPTE À REBOURS ===
+        function startCountdown() {
+            // Récupérer les valeurs du formulaire
+            const dateInput = document.getElementById('target-date').value;
+            const purposeInput = document.getElementById('countdown-purpose').value;
+            
+            // Vérifier que les champs sont remplis
+            if (!dateInput || !purposeInput) {
+                alert('Veuillez remplir tous les champs.');
+                return;
+            }
+            
+            // Convertir la date en objet Date
+            targetDate = new Date(dateInput);
+            
+            // Vérifier que la date est dans le futur
+            if (targetDate <= new Date()) {
+                alert('Veuillez sélectionner une date future.');
+                return;
+            }
+            
+            // Afficher l'objectif
+            document.getElementById('countdown-purpose-display').textContent = purposeInput;
+            
+            // Cacher le formulaire et afficher le compte à rebours
+            document.getElementById('form-section').style.display = 'none';
+            document.getElementById('countdown-section').style.display = 'block';
+            
+            // Démarrer le compte à rebours
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        // === FONCTION POUR METTRE À JOUR LE COMPTE À REBOURS ===
+        function updateCountdown() {
+            const now = new Date();
+            const timeDifference = targetDate - now;
+            
+            // Si le compte à rebours est terminé
+            if (timeDifference <= 0) {
+                clearInterval(countdownInterval);
+                document.getElementById('days').textContent = '00';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('minutes').textContent = '00';
+                document.getElementById('seconds').textContent = '00';
+                document.getElementById('quote').textContent = "Le temps est écoulé !";
+                return;
+            }
+            
+            // Calculer les jours, heures, minutes, secondes
+            const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+            
+            // Mettre à jour l'affichage
+            document.getElementById('days').textContent = formatTime(days);
+            document.getElementById('hours').textContent = formatTime(hours);
+            document.getElementById('minutes').textContent = formatTime(minutes);
+            document.getElementById('seconds').textContent = formatTime(seconds);
+        }
+
+        // === FONCTION POUR FORMATER LE TEMPS (ajouter un zéro si nécessaire) ===
+        function formatTime(time) {
+            return time < 10 ? `0${time}` : time;
+        }
+
+        // === ANIMATION DE FOND AVEC PARTICULES ===
+        function initBackgroundAnimation() {
+            canvas = document.getElementById('background-animation');
+            ctx = canvas.getContext('2d');
+            
+            // Redimensionner le canvas pour qu'il corresponde à la fenêtre
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Créer les particules
+            createParticles();
+            
+            // Démarrer l'animation
+            animate();
+        }
+
+        // === FONCTION POUR REDIMENSIONNER LE CANVAS ===
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        // === FONCTION POUR CRÉER LES PARTICULES ===
+        function createParticles() {
+            particles = [];
+            const particleCount = Math.min(100, Math.floor((window.innerWidth * window.innerHeight) / 10000));
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 3 + 1,
+                    speedX: (Math.random() - 0.5) * 0.5,
+                    speedY: (Math.random() - 0.5) * 0.5,
+                    opacity: Math.random() * 0.5 + 0.2
+                });
+            }
+        }
+
+        // === FONCTION D'ANIMATION DES PARTICULES ===
+        function animate() {
+            // Effacer le canvas avec un fond semi-transparent pour créer un effet de traînée
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Mettre à jour et dessiner chaque particule
+            particles.forEach(particle => {
+                // Mettre à jour la position
+                particle.x += particle.speedX;
+                particle.y += particle.speedY;
+                
+                // Rebondir sur les bords
+                if (particle.x <= 0 || particle.x >= canvas.width) particle.speedX *= -1;
+                if (particle.y <= 0 || particle.y >= canvas.height) particle.speedY *= -1;
+                
+                // Dessiner la particule
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${particle.opacity})`;
+                ctx.fill();
+            });
+            
+            // Dessiner des lignes entre les particules proches
+            drawConnections();
+            
+            // Continuer l'animation
+            requestAnimationFrame(animate);
+        }
+
+        // === FONCTION POUR DESSINER LES CONNEXIONS ENTRE PARTICULES ===
+        function drawConnections() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Dessiner une ligne si les particules sont proches
+                    if (distance < 100) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 * (1 - distance/100)})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
